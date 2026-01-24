@@ -1,0 +1,200 @@
+================================================================================
+POLIS COOLIFY MINIMAL DEPLOYMENT - QUICK START
+================================================================================
+
+WHAT YOU GET:
+✅ 5 Essential Services (PostgreSQL, Server, Math, File Server, Nginx Proxy)
+✅ Zero Development Clutter (no emulators, no dev tools, no optional components)
+✅ Production-Ready Configuration
+✅ Full YAML syntax validation
+
+FILES CREATED:
+1. docker-compose.coolify.yml    - Minimal docker-compose for Coolify
+2. coolify.env                   - Template with all required variables
+3. COOLIFY_DEPLOYMENT.md         - Complete deployment guide (40+ sections)
+4. COOLIFY_QUICK_START.txt       - This file
+
+================================================================================
+DEPLOYMENT CHECKLIST
+================================================================================
+
+Before deploying, you need:
+
+[ ] 1. OIDC Provider (Auth0, Okta, Azure AD, etc.)
+      - Issuer URL
+      - Client ID
+      - Client Secret (optional)
+      - Audience
+      - JWKS URI
+
+[ ] 2. Domain Name
+      - Pointed to your Coolify instance
+      - SSL will be auto-provisioned
+
+[ ] 3. JWT Keys (Generate with OpenSSL)
+      openssl genpkey -algorithm RSA -out jwt-private.pem -pkeyopt rsa_keygen_bits:4096
+      openssl rsa -in jwt-private.pem -pubout -out jwt-public.pem
+      (Then base64 encode both)
+
+[ ] 4. Strong Database Password
+      - Use a minimum 16 characters
+      - Mix uppercase, lowercase, numbers, symbols
+
+================================================================================
+QUICK SETUP (5 STEPS)
+================================================================================
+
+STEP 1: Copy template env
+  cp coolify.env .env
+
+STEP 2: Fill in CRITICAL variables in .env
+  - POSTGRES_PASSWORD (strong password)
+  - API_PROD_HOSTNAME (your domain)
+  - DOMAIN_OVERRIDE (same as above)
+  - AUTH_ISSUER, AUTH_CLIENT_ID, AUTH_AUDIENCE, JWKS_URI
+  - JWT_PRIVATE_KEY, JWT_PUBLIC_KEY (base64 encoded)
+
+STEP 3: In Coolify Dashboard
+  - Create New Project
+  - Add Application → Docker Compose
+  - Repository: https://github.com/biehlio/polis
+  - Branch: edge
+  - Docker Compose File: docker-compose.coolify.yml
+
+STEP 4: Set Environment Variables
+  - Copy entire .env into Coolify's environment editor
+  - Click Save
+
+STEP 5: Deploy
+  - Click Deploy
+  - Wait 5-10 minutes for build and startup
+  - Visit https://your-domain.com
+
+================================================================================
+SERVICES INCLUDED
+================================================================================
+
+Service              Technology      Purpose
+─────────────────────────────────────────────────────────────
+PostgreSQL          Database         Relational data storage
+Server               Node.js/Express  API backend (port 5000)
+Math                 Clojure/JVM      Sentiment analysis engine
+File Server          Node.js          Static asset serving (port 8080)
+Nginx Proxy          Nginx            Reverse proxy + routing (ports 80/443)
+
+NO LOCAL SERVICES INCLUDED (to keep it minimal):
+- No oidc-simulator (use your own OIDC provider)
+- No MinIO (S3 storage - configure externally)
+- No DynamoDB Local (use AWS DynamoDB)
+- No Ollama (LLM server - optional advanced feature)
+- No LocalStack (AWS emulator - use real AWS)
+
+================================================================================
+CRITICAL CONFIGURATION
+================================================================================
+
+REQUIRED ENVIRONMENT VARIABLES (must be set):
+  POSTGRES_PASSWORD              - Strong DB password
+  DATABASE_URL                   - postgres://postgres:PASSWORD@postgres:5432/polis
+  AUTH_ISSUER                    - OIDC issuer URL
+  AUTH_CLIENT_ID                 - OIDC client ID
+  AUTH_AUDIENCE                  - OIDC audience
+  JWKS_URI                       - OIDC JWKS endpoint
+  JWT_PRIVATE_KEY                - Base64 encoded RSA private key
+  JWT_PUBLIC_KEY                 - Base64 encoded RSA public key
+  API_PROD_HOSTNAME              - Your domain name
+  DOMAIN_OVERRIDE                - Your domain name (same as above)
+  POLIS_FROM_ADDRESS             - "Service <noreply@yourdomain.com>"
+
+OPTIONAL ENVIRONMENT VARIABLES (only if using these features):
+  OPENAI_API_KEY                 - For GPT model integration
+  ANTHROPIC_API_KEY              - For Claude model integration
+  GEMINI_API_KEY                 - For Gemini model integration
+  AKISMET_ANTISPAM_API_KEY       - For comment spam filtering
+  GA_TRACKING_ID                 - For Google Analytics
+
+================================================================================
+PORTS AND NETWORKING
+================================================================================
+
+External (exposed to internet):
+  Port 80    → HTTP (redirects to HTTPS)
+  Port 443   → HTTPS (Nginx reverse proxy)
+
+Internal (Docker network only):
+  Port 5000  → Server API
+  Port 8080  → File Server
+  Port 5432  → PostgreSQL
+
+All services communicate via Docker network "polis-net".
+Only Nginx ports are exposed.
+
+================================================================================
+VERIFICATION AFTER DEPLOYMENT
+================================================================================
+
+Check all services are running:
+  docker-compose -f docker-compose.coolify.yml ps
+
+Check server logs:
+  docker-compose -f docker-compose.coolify.yml logs -f server
+
+Check database is healthy:
+  docker-compose -f docker-compose.coolify.yml exec postgres pg_isready
+
+Visit in browser:
+  https://your-domain.com
+
+You should see the Polis home page.
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read COOLIFY_DEPLOYMENT.md for:
+   - Troubleshooting guide
+   - Scaling instructions
+   - Backup/recovery procedures
+   - Security best practices
+   - Advanced configuration options
+
+2. Configure your OIDC provider:
+   - Create application in your OIDC provider
+   - Set redirect URI to: https://your-domain.com/auth/callback
+
+3. Create admin user:
+   - Set ADMIN_UIDS environment variable with your user IDs
+
+4. Optional: Add AI features
+   - Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY
+   - Later: Deploy Delphi service for narrative generation
+
+================================================================================
+NEED HELP?
+================================================================================
+
+- Full deployment guide: COOLIFY_DEPLOYMENT.md (this repo)
+- Polis configuration reference: docs/configuration.md
+- GitHub discussions: https://github.com/compdemocracy/polis/discussions
+- GitHub issues: https://github.com/compdemocracy/polis/issues
+
+================================================================================
+SECURITY NOTES
+================================================================================
+
+✅ DO:
+  - Use strong passwords (16+ chars, mixed case, numbers, symbols)
+  - Keep .env out of version control (add to .gitignore)
+  - Enable database SSL in production (DATABASE_SSL=true)
+  - Rotate JWT keys periodically
+  - Monitor Docker logs for errors
+  - Keep images updated
+
+❌ DON'T:
+  - Commit .env to git
+  - Use weak database passwords
+  - Share JWT keys or API keys
+  - Skip HTTPS (always use certificates)
+  - Leave admin access open
+
+================================================================================
